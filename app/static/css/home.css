@@ -1,0 +1,99 @@
+/* ===== RESET & BASE ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+body {
+    background: radial-gradient(circle at center, #0d1421 0%, #05080f 100%);
+    color: #c9d1d9;
+    min-height: 100vh;
+    padding: 25px;
+}
+
+/* ===== LOGOUT ===== */
+.logout-wrapper { position: absolute; top: 25px; right: 35px; z-index: 100; }
+.logout-wrapper a { color: #f85149; font-size: 32px; text-decoration: none; transition: 0.3s; }
+.logout-wrapper a:hover { color: #ff7b72; transform: scale(1.1); }
+
+/* ===== TOP HEADER ===== */
+.top-header {
+    background: rgba(22, 27, 34, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.header-row {
+    display: flex;
+    gap: 40px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.header-group { display: flex; flex-direction: column; gap: 8px; }
+.header-group label {
+    font-size: 11px; color: #58a6ff; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.header-group input, .header-group select {
+    background: #0d1117; border: 1.5px solid #30363d; color: #f0f6fc;
+    padding: 10px 14px; border-radius: 8px; font-size: 13px; outline: none;
+}
+
+/* ===== TAB MENU ===== */
+.tab-menu { display: flex; gap: 10px; }
+.tab-menu button {
+    background: transparent; border: none; border-bottom: 3px solid transparent;
+    color: #8b949e; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.tab-menu button.active {
+    color: #58a6ff; border-bottom: 3px solid #58a6ff; background: rgba(88, 166, 255, 0.05);
+}
+
+/* ===== TABLE SYSTEM ===== */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.table-container {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 0 12px 12px 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    overflow-x: auto;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+#resume table        { min-width: 1200px; }
+#biaya-muat table    { min-width: 2600px; }
+#biaya-bongkar table { min-width: 3000px; }
+
+th {
+    background: #1f242c; padding: 15px; color: #58a6ff;
+    text-align: left; font-size: 11px; border-bottom: 2px solid #30363d;
+    text-transform: uppercase; white-space: nowrap;
+}
+
+td {
+    padding: 12px 15px; border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    font-size: 12px; white-space: nowrap;
+}
+
+/* ===== INPUT ROW ===== */
+.input-row-excel td { background: #0d1117; padding: 8px 10px; }
+.input-row-excel input {
+    background: #161b22; border: 1px solid #30363d; color: #58a6ff;
+    padding: 6px 10px; border-radius: 5px; width: 100%; font-size: 12px; outline: none;
+}
+.input-row-excel input:focus { border-color: #58a6ff; }
+.input-row-excel input[readonly] { background: #0d1117; color: #444c56; cursor: not-allowed; }
+
+/* ===== MISC ===== */
+.profit-cell { color: #3fb950; font-weight: 700; }
+.btn-save { background: none; border: none; color: #58a6ff; cursor: pointer; font-size: 18px; }
+.btn-save:hover { color: #388bfd; }
+.btn-add { background: #238636; color: white; border: none; padding: 6px 15px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.btn-add:hover { background: #2ea043; }
