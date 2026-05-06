@@ -1,0 +1,384 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" style="color-scheme: dark;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - JOA Premium</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+
+<body>
+
+    <div class="welcome-banner">
+        Hello, {{ user.get_full_name|default:user.username|upper }}
+    </div>
+
+    <div class="dashboard-main">
+
+        <!-- Tabs & Search Header -->
+        <div class="tabs-header">
+            <div style="display:flex; gap:15px;">
+                <a href="?mode=edit" class="tab-item {% if mode == 'edit' %}active{% endif %}">
+                    <i class='bx bxs-edit-alt'></i> EDIT MODE
+                </a>
+                <a href="?mode=view" class="tab-item {% if mode == 'view' %}active{% endif %}">
+                    <i class='bx bxs-show'></i> VIEW MODE
+                </a>
+            </div>
+
+            <div style="margin-left: auto; display:flex; gap:20px; align-items: center;">
+                <div class="search-wrapper">
+                    <i class='bx bx-search' onclick="updateURL()"
+                        style="position: absolute; left: 15px; color: var(--accent-blue); font-size: 20px; cursor: pointer; z-index: 10;"></i>
+                    <input type="text" id="searchInput" placeholder="Search Customer / Route..." value="{{ search_q }}"
+                        onkeydown="if(event.key==='Enter')updateURL()" class="search-input">
+                    {% if search_q %}
+                    <i class='bx bx-x' onclick="document.getElementById('searchInput').value=''; updateURL()"
+                        style="position: absolute; right: 15px; color: var(--text-dim); cursor: pointer; font-size: 20px;"></i>
+                    {% endif %}
+                </div>
+
+                {% if mode == 'edit' %}
+                <button class="btn-new" onclick="openModal()">
+                    <i class='bx bx-plus-circle'></i> BIKIN BARU
+                </button>
+                {% endif %}
+
+                <div class="logout-wrapper" style="position: static; margin: 0;">
+                    {% csrf_token %}
+                    <a href="{% url 'logout' %}" title="Logout" style="margin-left: 10px;"><i
+                            class='bx bx-power-off'></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-split">
+            <!-- Left Side: Table Area -->
+            <div class="table-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><i class='bx bx-hash'></i> Kode</th>
+                            <th><i class='bx bx-user'></i> Customer</th>
+                            <th><i class='bx bx-map-pin'></i> POL</th>
+                            <th><i class='bx bx-map'></i> POD</th>
+                            <th><i class='bx bx-time'></i> Updated</th>
+                            <th><i class='bx bx-calendar'></i> Created</th>
+                            {% if mode == 'edit' %}
+                            <th style="text-align: center;"><i class='bx bx-cog'></i> AKSI</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if page_obj %}
+                        {% for shipment in page_obj %}
+                        <tr onclick="window.location.href='{% url 'home' %}?customer_id={{ shipment.customer.id }}&mode={{ mode }}&bulan={{ selected_bulan }}&tahun={{ selected_tahun }}&pol={{ shipment.pol|urlencode }}&pod={{ shipment.pod|urlencode }}{% if mode == 'view' %}&user_id={{ target_sales.id }}{% endif %}'"
+                            style="cursor:pointer;">
+                            <td style="font-weight:700; color:var(--accent-blue);">{{ shipment.customer.kode_customer|upper }}</td>
+                            <td style="font-weight:600;">{{ shipment.customer.nama_customer|upper }}</td>
+                            <td>{{ shipment.pol|default:"-"|upper }}</td>
+                            <td>{{ shipment.pod|default:"-"|upper }}</td>
+                            <td style="font-size:12px; opacity:0.8;">{{ shipment.customer.updated_at|date:"d M Y, H:i" }}</td>
+                            <td style="font-size:12px; opacity:0.8;">{{ shipment.customer.created_at|date:"d M Y" }}</td>
+                            {% if mode == 'edit' %}
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 8px; justify-content: center;">
+                                    <button class="btn-action copy"
+                                        onclick="event.stopPropagation(); copySalesData('{{ shipment.customer.id }}', '{{ shipment.customer.nama_customer|escapejs }}', '{{ shipment.pol|escapejs }}', '{{ shipment.pod|escapejs }}')"
+                                        title="Salin ke Bulan Lain">
+                                        <i class='bx bx-copy-alt'></i>
+                                    </button>
+                                    <button class="btn-action delete"
+                                        onclick="event.stopPropagation(); deleteSalesData('{{ shipment.customer.id }}', '{{ shipment.customer.nama_customer|escapejs }}', '{{ shipment.pol|escapejs }}', '{{ shipment.pod|escapejs }}')"
+                                        title="Hapus Data Bulan Ini">
+                                        <i class='bx bx-trash'></i>
+                                    </button>
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                <div style="padding: 40px; text-align: center; color: var(--text-dim);">
+                                    <i class='bx bx-folder-open'
+                                        style="font-size: 48px; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                                    Belum ada data laporan untuk periode ini.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination Footer -->
+                <div class="pagination-footer">
+                    {% if page_obj.has_previous %}
+                    <a
+                        href="?page={{ page_obj.previous_page_number }}&mode={{ mode }}&sales_id={{ target_sales.id }}&q={{ search_q|urlencode }}&bulan={{ selected_bulan }}&tahun={{ selected_tahun }}">
+                        <i class='bx bx-chevron-left'></i>
+                    </a>
+                    {% else %}
+                    <span class="disabled"
+                        style="opacity: 0.2; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;"><i
+                            class='bx bx-chevron-left'></i></span>
+                    {% endif %}
+
+                    <span style="font-size: 14px; font-weight: 700; color: var(--text-bright);">
+                        {{ page_obj.number }} <span style="color: var(--text-dim); font-weight: 400;">/</span> {{ page_obj.paginator.num_pages }}
+                    </span>
+
+                    {% if page_obj.has_next %}
+                    <a
+                        href="?page={{ page_obj.next_page_number }}&mode={{ mode }}&sales_id={{ target_sales.id }}&q={{ search_q|urlencode }}&bulan={{ selected_bulan }}&tahun={{ selected_tahun }}">
+                        <i class='bx bx-chevron-right'></i>
+                    </a>
+                    {% else %}
+                    <span class="disabled"
+                        style="opacity: 0.2; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;"><i
+                            class='bx bx-chevron-right'></i></span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Side: Sidebar Controls -->
+            <div class="sidebar-section">
+                {% if mode == 'view' %}
+                <div class="card-info">
+                    <label>Pilih Sales View</label>
+                    <select id="salesDropdown" onchange="updateURL()">
+                        <option value="">-- SALES NAME --</option>
+                        {% for s in all_sales %}
+                        <option value="{{ s.id }}" {% if s.id == target_sales.id %}selected{% endif %}>
+                            {{ s.get_full_name|default:s.username|upper }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="card-info">
+                    <label>Periode Laporan</label>
+                    <div style="display:flex; flex-direction: column; gap:10px;">
+                        <select id="bulanDropdown" onchange="updateURL()">
+                            {% for b_num, b_name in months %}
+                            <option value="{{ b_num }}" {% if b_num == selected_bulan %}selected{% endif %}>{{ b_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select id="tahunDropdown" onchange="updateURL()">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if y == selected_tahun %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card-info" style="opacity: 0.6; pointer-events: none;">
+                    <label>Status Sistem</label>
+                    <div style="font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        <div
+                            style="width: 8px; height: 8px; background: var(--accent-emerald); border-radius: 50%; box-shadow: 0 0 10px var(--accent-emerald);">
+                        </div>
+                        Connected & Secured
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Bikin Baru -->
+    <div id="newReportModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3><i class='bx bx-file-plus'></i> Buat Laporan Baru</h3>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Pilih Customer</label>
+                    <select id="newCustomerSelect" class="modal-select">
+                        {% for cust in all_mst_customers %}
+                        <option value="{{ cust.id }}">{{ cust.kode_customer }} - {{ cust.nama_customer|upper }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px;">
+                    <div class="form-group">
+                        <label><i class='bx bx-anchor'></i> POL (Loading)</label>
+                        <input type="text" id="newPOL" placeholder="Contoh: Balikpapan">
+                    </div>
+                    <div class="form-group">
+                        <label><i class='bx bx-map-pin'></i> POD (Discharge)</label>
+                        <input type="text" id="newPOD" placeholder="Contoh: Surabaya">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div class="form-group">
+                        <label>Bulan</label>
+                        <select id="newBulan" class="modal-select">
+                            {% for b_num, b_name in months %}
+                            <option value="{{ b_num }}" {% if b_num == selected_bulan %}selected{% endif %}>{{ b_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tahun</label>
+                        <select id="newTahun" class="modal-select">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if y == selected_tahun %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 30px;">
+                <button class="btn-cancel" onclick="closeModal()">BATAL</button>
+                <button class="btn-submit" onclick="submitNewReport()">KONFIRMASI & BUAT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const getCSRF = () => {
+            const token = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!token) {
+                console.error("CSRF token not found in DOM!");
+                return "";
+            }
+            return token.value;
+        };
+
+        function handleSearch(e) {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                updateURL();
+            }
+        }
+
+        function deleteSalesData(customerId, name, pol, pod) {
+            if (!confirm(`PERINGATAN: Ini akan menghapus SELURUH data laporan (Resume, Muat, & Bongkar) untuk ${name} [${pol} -> ${pod}] pada periode ini.\n\nYakin ingin hapus baris data ini?`)) return;
+
+            fetch('/delete-sales-data/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({
+                    customer_id: customerId,
+                    bulan: document.getElementById('bulanDropdown').value,
+                    tahun: document.getElementById('tahunDropdown').value,
+                    pol: pol,
+                    pod: pod
+                })
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (res.ok) {
+                        location.reload();
+                    } else {
+                        alert("Gagal menghapus: " + (data.message || "Error tidak diketahui"));
+                        console.error("Delete error:", data);
+                    }
+                })
+                .catch(err => {
+                    alert("Kesalahan koneksi saat menghapus.");
+                    console.error("Fetch error:", err);
+                });
+        }
+
+        function copySalesData(customerId, name, src_pol, src_pod) {
+            const tgtBulan = prompt("Tujuan SALIN ke Bulan (1-12):", document.getElementById('bulanDropdown').value);
+            if (!tgtBulan) return;
+            const tgtTahun = prompt("Tujuan SALIN ke Tahun (YYYY):", document.getElementById('tahunDropdown').value);
+            if (!tgtTahun) return;
+
+            const tgtPOL = prompt("Tujuan POL (Port of Loading):", src_pol);
+            if (tgtPOL === null) return;
+            const tgtPOD = prompt("Tujuan POD (Port of Discharge):", src_pod);
+            if (tgtPOD === null) return;
+
+            fetch('/copy-sales-data/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify({
+                    customer_id: customerId,
+                    src_bulan: document.getElementById('bulanDropdown').value,
+                    src_tahun: document.getElementById('tahunDropdown').value,
+                    src_pol: src_pol,
+                    src_pod: src_pod,
+                    tgt_bulan: tgtBulan,
+                    tgt_tahun: tgtTahun,
+                    tgt_pol: tgtPOL,
+                    tgt_pod: tgtPOD
+                })
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert("Berhasil menyalin data!");
+                        window.location.href = `?bulan=${tgtBulan}&tahun=${tgtTahun}`;
+                    } else {
+                        alert("Gagal menyalin: " + (data.message || "Error tidak diketahui"));
+                        console.error("Copy error:", data);
+                    }
+                })
+                .catch(err => {
+                    alert("Kesalahan koneksi saat menyalin.");
+                    console.error("Fetch error:", err);
+                });
+        }
+
+        function updateURL() {
+            const mode = "{{ mode }}";
+            const bulan = document.getElementById('bulanDropdown').value;
+            const tahun = document.getElementById('tahunDropdown').value;
+            // Always reset to page 1 when filter/search changes
+            let url = "?page=1&mode=" + mode + "&bulan=" + bulan + "&tahun=" + tahun;
+
+            const q = document.getElementById('searchInput');
+            if (q && q.value.trim() !== '') {
+                url += "&q=" + encodeURIComponent(q.value.trim());
+            }
+
+            if (mode === 'view') {
+                const salesDropdown = document.getElementById('salesDropdown');
+                if (salesDropdown && salesDropdown.value) {
+                    url += "&sales_id=" + salesDropdown.value;
+                }
+            }
+            window.location.href = url;
+        }
+
+        function openModal() {
+            document.getElementById('newReportModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('newReportModal').style.display = 'none';
+        }
+
+        function submitNewReport() {
+            const cust = document.getElementById('newCustomerSelect').value;
+            const bln = document.getElementById('newBulan').value;
+            const thn = document.getElementById('newTahun').value;
+            const pol = document.getElementById('newPOL').value;
+            const pod = document.getElementById('newPOD').value;
+
+            if (!cust) {
+                alert("Silakan pilih Customer terlebih dahulu!");
+                return;
+            }
+            if (!pol || !pod) {
+                alert("Silakan isi POL dan POD terlebih dahulu!");
+                return;
+            }
+
+            window.location.href = "{% url 'home' %}?customer_id=" + cust + "&mode=edit&bulan=" + bln + "&tahun=" + thn + "&pol=" + encodeURIComponent(pol) + "&pod=" + encodeURIComponent(pod);
+        }
+    </script>
+</body>
+
+</html>

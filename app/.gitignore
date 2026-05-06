@@ -1,0 +1,20 @@
+# File Rahasia (Credential)
+.env
+
+# Python (File sampah hasil compile)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# MySQL / Local Settings
+*.log
+*.sql
+.vscode/

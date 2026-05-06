@@ -1,0 +1,468 @@
+/* ===== IMPORT FONT (Sesuai Asli) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+/* ===== RESET ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ===== BODY DENGAN GRADASI WARNA NGE-POP & ANIMASI ===== */
+body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #030509;
+    /* Sedikit lebih gelap biar kontras warna naik */
+    /* Background Gradient Mesh yang Warnanya Gue Nyalain (Nge-Pop) */
+    background-image:
+        radial-gradient(at 10% 10%, rgba(31, 111, 235, 0.25) 0px, transparent 40%),
+        /* Biru Terang */
+        radial-gradient(at 90% 10%, rgba(88, 166, 255, 0.20) 0px, transparent 40%),
+        /* Biru Muda */
+        radial-gradient(at 90% 90%, rgba(31, 111, 235, 0.25) 0px, transparent 40%),
+        radial-gradient(at 10% 90%, rgba(88, 166, 255, 0.20) 0px, transparent 40%);
+    background-size: 200% 200%;
+    animation: meshGradient 12s ease infinite;
+    /* Sedikit dicepatin biar rame */
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ===== ANIMATED GRID BACKGROUND (Gue nyalain dikit warnanya) ===== */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(88, 166, 255, 0.05) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, rgba(88, 166, 255, 0.05) 1.5px, transparent 1.5px);
+    background-size: 50px 50px;
+    animation: gridDrift 25s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ===== GLOWING ORBS (Sekarang Terbang Denyut) ===== */
+body::after {
+    content: '';
+    position: fixed;
+    width: 900px;
+    height: 900px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(31, 111, 235, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: orbFloating denut 18s ease-in-out infinite;
+}
+
+/* ===== FLOATING PARTICLES (Gue tambahin biar rame di background) ===== */
+.bg-particles {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle, #58a6ff 1px, transparent 1px);
+    background-size: 80px 80px;
+    background-position: 0 0;
+    opacity: 0.15;
+    animation: particleDrift 40s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* ===== KEYFRAMES BARU UNTUK BACKGROUND RAME ===== */
+
+/* Warna bergeser nge-pop */
+@keyframes meshGradient {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    50% {
+        background-position: 100% 100%;
+    }
+
+    100% {
+        background-position: 0% 0%;
+    }
+}
+
+/* Orb terbang dan denyut */
+@keyframes orbFloating {
+    0% {
+        top: -10%;
+        left: -10%;
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    33% {
+        top: 50%;
+        left: 80%;
+        transform: scale(1.3);
+        opacity: 1;
+    }
+
+    66% {
+        top: 110%;
+        left: 10%;
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+
+    100% {
+        top: -10%;
+        left: -10%;
+        transform: scale(1);
+        opacity: 0.6;
+    }
+}
+
+@keyframes particleDrift {
+    0% {
+        background-position: 0px 0px;
+    }
+
+    100% {
+        background-position: 300px 600px;
+    }
+}
+
+@keyframes gridDrift {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(50px, 50px);
+    }
+}
+
+/* ========================================= */
+/* ===== MAIN CONTAINER (Sesuai Asli) ===== */
+/* ========================================= */
+.login-container {
+    position: relative;
+    z-index: 1;
+    width: 960px;
+    height: 580px;
+    display: flex;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(88, 166, 255, 0.12);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 40px 80px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(24, 95, 165, 0.08);
+    animation: containerFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes containerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ===== LEFT PANEL (Sesuai Asli) ===== */
+.login-left {
+    flex: 1.1;
+    background: url("../images/foto.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 45px 40px;
+    overflow: hidden;
+}
+
+.login-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg,
+            rgba(6, 9, 16, 0.15) 0%,
+            rgba(6, 9, 16, 0.5) 50%,
+            rgba(6, 9, 16, 0.85) 100%);
+    z-index: 0;
+}
+
+.login-left-content {
+    position: relative;
+    z-index: 1;
+}
+
+.login-left-content h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.15;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.login-left-content h1 span {
+    color: #58a6ff;
+}
+
+.subtitle-text {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 300;
+    line-height: 1.6;
+    max-width: 280px;
+}
+
+.left-divider {
+    width: 36px;
+    height: 2px;
+    background: #58a6ff;
+    margin-bottom: 14px;
+    opacity: 0.8;
+}
+
+/* ===== RIGHT PANEL (Sesuai Asli) ===== */
+.login-right {
+    flex: 1;
+    padding: 55px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #0d1117;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-right::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 1px solid rgba(88, 166, 255, 0.06);
+    pointer-events: none;
+}
+
+.login-right::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 1px solid rgba(88, 166, 255, 0.04);
+    pointer-events: none;
+}
+
+.brand-tag {
+    position: absolute;
+    top: 30px;
+    right: 36px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: rgba(0, 119, 255, 0.419);
+}
+
+/* ===== FORM HEADER & ANIMASI (Sesuai Asli) ===== */
+.form-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    color: #58a6ff;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: 0;
+    animation: slideUp 0.6s 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.login-right h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: #f0f6fc;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+    opacity: 0;
+    animation: slideUp 0.6s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.login-subtitle {
+    color: #484f58;
+    margin-bottom: 36px;
+    font-size: 13px;
+    font-weight: 300;
+    opacity: 0;
+    animation: slideUp 0.6s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== INPUT GROUP (Sesuai Asli) ===== */
+.input-group {
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.input-group:nth-of-type(1) {
+    animation-delay: 0.55s;
+}
+
+.input-group:nth-of-type(2) {
+    animation-delay: 0.65s;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #8b949e;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 13px 16px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid #21262d;
+    border-radius: 10px;
+    outline: none;
+    color: #f0f6fc;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.input-group input::placeholder {
+    color: #30363d;
+}
+
+.input-group input:focus {
+    border-color: rgba(88, 166, 255, 0.5);
+    background-color: rgba(88, 166, 255, 0.04);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.08);
+}
+
+/* ===== PASSWORD WRAPPER & BUTTONS (Sesuai Asli) ===== */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input {
+    padding-right: 46px;
+}
+
+#togglePassword {
+    position: absolute;
+    right: 16px;
+    cursor: pointer;
+    color: #30363d;
+    font-size: 16px;
+    transition: color 0.2s;
+}
+
+#togglePassword:hover {
+    color: #58a6ff;
+}
+
+.forgot-pass {
+    color: #7d6d6d;
+    text-decoration: none;
+    font-size: 12px;
+    margin-bottom: 28px;
+    display: block;
+    text-align: right;
+    transition: color 0.2s;
+    opacity: 0;
+    animation: slideUp 0.6s 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.forgot-pass:hover {
+    color: #58a6ff;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: #1f6feb;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    animation: slideUp 0.6s 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.btn-login::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.4s;
+}
+
+.btn-login:hover {
+    background: #388bfd;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(31, 111, 235, 0.35);
+}
+
+.btn-login:hover::after {
+    left: 160%;
+}
+
+.btn-login:active {
+    transform: translateY(0px);
+    box-shadow: none;
+}
+
+.error-msg {
+    background: rgba(248, 81, 73, 0.08);
+    color: #f85149;
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid rgba(248, 81, 73, 0.2);
+}

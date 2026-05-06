@@ -1,0 +1,259 @@
+{% load idr_format %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Print Invoice - {{ customer.nama_customer }}</title>
+    <style>
+        /* CSS RESET & BASE */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11px;
+            color: #222;
+            line-height: 1.4;
+            padding: 40px;
+            background: #fff;
+        }
+
+        /* CONTAINER UTAMA */
+        .print-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* HEADER SECTION */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #2a7cd1;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .logo-area h1 {
+            color: #2a7cd1;
+            font-size: 24px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .logo-area p {
+            color: #666;
+            font-style: italic;
+        }
+
+        .info-area {
+            text-align: right;
+        }
+
+        .info-area h2 {
+            font-size: 18px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        /* TABEL DATA */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px 5px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        td {
+            border: 1px solid #dee2e6;
+            padding: 8px 5px;
+            vertical-align: middle;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        /* RINGKASAN BIAYA */
+        .summary-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .summary-table {
+            width: 300px;
+        }
+
+        .summary-table td {
+            border: none;
+            padding: 5px 0;
+        }
+
+        .total-row {
+            border-top: 2px solid #2a7cd1 !important;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* FOOTER / TANDA TANGAN */
+        .footer-sig {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sig-box {
+            width: 200px;
+            text-align: center;
+        }
+
+        .sig-space {
+            height: 80px;
+        }
+
+        /* PRINT CONTROL */
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                padding: 20px;
+            }
+
+            .print-container {
+                width: 100%;
+            }
+        }
+
+        /* UTILITY UNTUK USER BELAJAR EDIT */
+        .highlight-edit {
+            border: 1px dashed orange;
+            padding: 2px;
+        }
+    </style>
+    <script>
+        // Otomatis menutup tab setelah selesai print atau cancel
+        window.onafterprint = function () {
+            window.close();
+        };
+    </script>
+</head>
+
+<body>
+
+    <div class="print-container">
+        <!-- HEADER: Kamu bisa ganti Nama PT atau Logo di sini -->
+        <div class="header">
+            <div class="logo-area">
+                <h1>Semoga Jaya Group</h1>
+                <p>Freight Forwarding & Logistics</p>
+                <p style="font-size: 9px; font-style: normal; margin-top: 5px;">
+                    Jl. Contoh Alamat No. 123, Surabaya, Indonesia<br>
+                    Telp: (031) 123456 | Email: info@joalogistics.com
+                </p>
+            </div>
+            <div class="info-area">
+                <h2>LOGISTICS REPORT</h2>
+                <p>Customer: <strong>{{ customer.nama_customer|upper }}</strong></p>
+                <p>POL/POD: {{ pol }} / {{ pod }}</p>
+                <p>Periode: {{ bulan_name }} {{ tahun }}</p>
+            </div>
+        </div>
+
+        <!-- TABEL UTAMA: Tambah/Hapus kolom dengan mengedit <th> dan <td> -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30px;">No</th>
+                    <th>Consignee</th>
+                    <th>Job No</th>
+                    <th>Alamat Tujuan</th>
+                    <th>Tarif Dasar</th>
+                    <th>PPN</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_list %}
+                <tr>
+                    <td class="text-center">{{ forloop.counter }}</td>
+                    <td>{{ item.resume.consignee }}</td>
+                    <td class="text-center">{{ item.job_no }}</td>
+                    <td>{{ item.resume.alamat_bongkar }}</td>
+                    <td class="text-right">{{ item.resume.tarif_jasa_kirim|idrformat }}</td>
+                    <td class="text-right">{{ item.resume.ppn|idrformat }}</td>
+                    <td class="text-right font-bold">{{ item.resume.total|idrformat }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- RINGKASAN: Bagian perhitungan total -->
+        <div class="summary-container">
+            <table class="summary-table">
+                <tr>
+                    <td>Total Subtotal</td>
+                    <td class="text-right">{{ total_tarif|idrformat }}</td>
+                </tr>
+                <tr>
+                    <td>Total PPN</td>
+                    <td class="text-right">{{ total_ppn|idrformat }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>GRAND TOTAL</td>
+                    <td class="text-right">{{ total_all|idrformat }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- TANDA TANGAN -->
+        <div class="footer-sig">
+            <div class="sig-box">
+                <p>Dibuat Oleh,</p>
+                <div class="sig-space"></div>
+                <p><strong>( Admin JOA )</strong></p>
+            </div>
+            <div class="sig-box">
+                <p>Menyetujui,</p>
+                <div class="sig-space"></div>
+                <p><strong>( {{ customer.nama_customer }} )</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOMBOL BANTUAN (Tidak akan ikut ter-print) -->
+    <div class="no-print" style="position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px;">
+        <button onclick="window.close()"
+            style="padding: 10px 20px; background: #666; color: #fff; border: none; border-radius: 5px; cursor: pointer;">TUTUP
+            HALAMAN</button>
+        <button onclick="window.print()"
+            style="padding: 10px 20px; background: #2a7cd1; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">CETAK
+            SEKARANG</button>
+    </div>
+
+</body>
+
+</html>

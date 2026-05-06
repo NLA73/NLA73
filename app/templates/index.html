@@ -1,0 +1,983 @@
+{% load static %}
+{% load idr_format %}
+<!DOCTYPE html>
+<html lang="en" style="color-scheme: dark;">
+
+<head>
+    <meta charset="UTF-8">
+    <title>JOA Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+
+<body>
+    <div class="top-header">
+
+        <div class="header-row">
+            <div class="header-group">
+                <label><i class='bx bx-calendar'></i> Bulan</label>
+                <input type="text" value="{{ bulan_name }}" style="width: 150px;" readonly>
+            </div>
+            <div class="header-group">
+                <label><i class='bx bx-calendar-event'></i> Tahun</label>
+                <input type="number" value="{{ tahun }}" style="width: 110px;" readonly>
+            </div>
+            <div class="header-group">
+                <label><i class='bx bx-user'></i> Customer Account</label>
+                <div style="display:flex; gap:12px;">
+                    <input type="text" value="{{ customer.kode_customer }}"
+                        style="width: 100px; color: var(--accent-blue); font-weight: 700;" readonly>
+                    <input type="text" value="{{ customer.nama_customer|upper }}" style="width: 450px;" readonly>
+                </div>
+            </div>
+
+            <div class="logout-wrapper" style="position: relative; margin: 0; margin-left: auto;">
+                {% csrf_token %}
+                <a href="{% url 'dashboard' %}" title="Back to Dashboard"><i class='bx bx-arrow-back'></i></a>
+                <a href="{% url 'logout' %}" title="Logout" class="red"><i class='bx bx-power-off'></i></a>
+            </div>
+        </div>
+        <div class="header-row">
+            <div class="header-group">
+                <label><i class='bx bx-id-card'></i> Sales Executive</label>
+                <div style="display:flex; gap:12px;">
+                    <input type="text" value="{{ target_user.nomor_sales }}"
+                        style="width: 100px; color: var(--accent-gold);" readonly>
+                    <input type="text" value="{{ target_user.get_full_name|upper|default:target_user.username|upper }}"
+                        style="width: 250px;" readonly>
+                </div>
+            </div>
+            <div class="header-group">
+                <label><i class='bx bx-anchor'></i> POL (Loading)</label>
+                <input type="text" id="pol" value="{{ pol|default:'' }}"
+                    style="width: 180px; color: var(--accent-gold); font-weight: 600;" readonly>
+            </div>
+            <div class="header-group">
+                <label><i class='bx bx-map-pin'></i> POD (Discharge)</label>
+                <input type="text" id="pod" value="{{ pod|default:'' }}"
+                    style="width: 180px; color: var(--accent-gold); font-weight: 600;" readonly>
+            </div>
+            {% if is_readonly %}
+            <div style="margin-left: auto; align-self: center;">
+                <div
+                    style="background: rgba(249, 215, 28, 0.1); border: 1px solid var(--accent-gold); padding: 10px 20px; border-radius: 12px; display: flex; align-items: center; gap: 10px;">
+                    <i class='bx bx-lock-alt' style="color: var(--accent-gold); font-size: 20px;"></i>
+                    <span style="color: var(--accent-gold); font-weight: 700; font-size: 13px;">VIEW ONLY MODE</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="tab-menu">
+        <button class="tab-link active" onclick="openTab(event, 'resume')"><i class='bx bx-list-ul'></i> Resume</button>
+        <button class="tab-link" onclick="openTab(event, 'biaya-muat')"><i class='bx bx-anchor'></i> Biaya Muat</button>
+        <button class="tab-link" onclick="openTab(event, 'biaya-bongkar')"><i class='bx bx-package'></i> Biaya Bongkar +
+            Panduan</button>
+    </div>
+
+    <!-- ======================== TAB RESUME ======================== -->
+    <div id="resume" class="tab-content active">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            {% if not is_readonly %}
+            <button class="btn-add" onclick="batchDelete('resume')"
+                style="background: linear-gradient(135deg, #ff416c, #ff4b2b); gap: 8px;">
+                <i class='bx bx-checkbox-checked'></i> Hapus Terpilih
+            </button>
+            {% else %}<div></div>{% endif %}
+
+            <div style="display:flex; gap:10px;">
+                <button class="btn-add" onclick="printSelectedRows()"
+                    style="background: linear-gradient(135deg, #58a6ff, #2a7cd1); gap: 8px;">
+                    <i class='bx bx-printer'></i> Cetak Terpilih
+                </button>
+                {% if not is_readonly %}
+                <button class="btn-add" onclick="addRow('resume')"
+                    style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                    <i class='bx bx-plus-circle'></i> Tambah Baris Resume
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="table-container">
+            <table id="table-resume">
+                <thead>
+                    <tr>
+                        <th style="width:40px;">No.</th>
+                        <th style="width:40px;"><input type="checkbox" onclick="toggleAll(this, 'resume')"></th>
+                        <th><i class='bx bx-user-pin'></i> Consignee</th>
+                        <th><i class='bx bx-map-alt'></i> Alamat Bongkar</th>
+                        <th><i class='bx bx-money'></i> Tarif Jasa</th>
+                        <th><i class='bx bx-percentage'></i> PPN %</th>
+                        <th><i class='bx bx-receipt'></i> PPN</th>
+                        <th><i class='bx bx-minus-circle'></i> PPH23</th>
+                        <th><i class='bx bx-wallet'></i> Total Terima</th>
+                        <th><i class='bx bx-calculator'></i> Total Biaya</th>
+                        <th><i class='bx bx-trending-up'></i> Profit</th>
+                        {% if not is_readonly %}<th><i class='bx bx-cog'></i></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in resumes %}
+                    <tr data-id="{{ item.id }}" class="input-row-excel">
+                        <td style="text-align:center;" class="row-no">{{ forloop.counter }}</td>
+                        <td style="text-align:center;"><input type="checkbox" class="row-check"></td>
+                        <td><input type="text" class="res-consignee" value="{{ item.consignee }}" {% if not is_readonly %}onblur="processResume(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="res-alamat" value="{{ item.alamat_bongkar }}" {% if not is_readonly %}onblur="processResume(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="res-tarif" value="{{ item.tarif_jasa_kirim|idrformat }}" {% if not is_readonly %}onblur="processResume(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="number" class="res-ppn-pct" value="{{ item.ppn_pct|default:11 }}" {% if not is_readonly %}onblur="processResume(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="res-ppn-val" value="{{ item.ppn|idrformat }}" readonly></td>
+                        <td><input type="text" class="res-pph23" value="{{ item.pph23|idrformat }}" readonly></td>
+                        <td><input type="text" class="res-total-terima" value="{{ item.total|idrformat }}" readonly>
+                        </td>
+                        <td><input type="text" class="res-total-biaya" value="{{ item.total_biaya|idrformat }}" {% if not is_readonly %}onblur="processResume(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="res-profit" value="{{ item.profit|idrformat }}" readonly></td>
+                        {% if not is_readonly %}
+                        <td style="display:flex; gap:5px;">
+                            <button class="btn-add" onclick="addRow('resume')" title="Baris Baru"><i
+                                    class='bx bx-plus'></i></button>
+                            <button class="btn-add" style="background:var(--accent-blue);"
+                                onclick="copyRow(this, 'resume')" title="Salin Baris"><i
+                                    class='bx bx-copy'></i></button>
+                            <button class="btn-add" style="background:#f85149;" onclick="deleteRow(this, 'resume')"
+                                title="Hapus Baris"><i class='bx bx-trash'></i></button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    {% if not is_readonly %}
+                    <tr data-id="" class="input-row-excel">
+                        <td style="text-align:center;" class="row-no">1</td>
+                        <td style="text-align:center;"><input type="checkbox" class="row-check"></td>
+                        <td><input type="text" class="res-consignee" placeholder="..." onblur="processResume(this)">
+                        </td>
+                        <td><input type="text" class="res-alamat" placeholder="..." onblur="processResume(this)"></td>
+                        <td><input type="text" class="res-tarif" value="0" onblur="processResume(this)"></td>
+                        <td><input type="number" class="res-ppn-pct" value="11" onblur="processResume(this)"></td>
+                        <td><input type="text" class="res-ppn-val" readonly></td>
+                        <td><input type="text" class="res-pph23" readonly></td>
+                        <td><input type="text" class="res-total-terima" readonly></td>
+                        <td><input type="text" class="res-total-biaya" readonly></td>
+                        <td><input type="text" class="res-profit" readonly></td>
+                        <td style="display:flex; gap:5px;">
+                            <button class="btn-add" onclick="addRow('resume')" title="Baris Baru"><i
+                                    class='bx bx-plus'></i></button>
+                            <button class="btn-add" style="background:var(--accent-blue);" disabled
+                                title="Simpan dulu sebelum salin"><i class='bx bx-copy'></i></button>
+                            <button class="btn-add" style="background:#f85149;" disabled title="Hapus"><i
+                                    class='bx bx-trash'></i></button>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ======================== TAB BIAYA MUAT ======================== -->
+    <div id="biaya-muat" class="tab-content">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            {% if not is_readonly %}
+            <button class="btn-add" onclick="batchDelete('muat')"
+                style="background: linear-gradient(135deg, #ff416c, #ff4b2b); gap: 8px;">
+                <i class='bx bx-checkbox-checked'></i> Hapus Terpilih
+            </button>
+            {% else %}<div></div>{% endif %}
+            {% if not is_readonly %}
+            <button class="btn-add" onclick="addRow('muat')"
+                style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                <i class='bx bx-plus-circle'></i> Tambah Baris Muat
+            </button>
+            {% endif %}
+        </div>
+        <div class="table-container">
+            <table id="table-muat">
+                <thead>
+                    <tr>
+                        <th><i class='bx bx-hash'></i> Job No</th>
+                        <th><i class='bx bx-check-shield'></i> Inc</th>
+                        <th><i class='bx bx-user-check'></i> Tertanggung</th>
+                        <th style="min-width: 100px;"><i class='bx bx-percent'></i> %</th>
+                        <th><i class='bx bx-diamond'></i> Premi</th>
+                        <th><i class='bx bx-file'></i> BL Fee</th>
+                        <th><i class='bx bx-bookmark'></i> Seal</th>
+                        <th><i class='bx bx-package'></i> Freight</th>
+                        <th><i class='bx bx-anchor'></i> LSS</th>
+                        <th><i class='bx bx-plus'></i> Toeslag</th>
+                        <th><i class='bx bx-water'></i> Alur</th>
+                        <th><i class='bx bx-upvote'></i> THC</th>
+                        <th><i class='bx bx-transfer'></i> LOLO</th>
+                        <th><i class='bx bx-archive'></i> Stuffing</th>
+                        <th><i class='bx bx-error-alt'></i> Damage</th>
+                        <th><i class='bx bx-truck'></i> Trucking</th>
+                        <th><i class='bx bx-briefcase'></i> OPS</th>
+                        <th><i class='bx bx-list-check'></i> Tally</th>
+                        <th><i class='bx bx-dots-horizontal-rounded'></i> L1</th>
+                        <th><i class='bx bx-dots-horizontal-rounded'></i> L2</th>
+                        <th><i class='bx bx-calculator'></i> Total Biaya</th>
+                        {% if not is_readonly %}<th><i class='bx bx-cog'></i></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in muats %}
+                    <tr data-id="{{ m.id }}" class="input-row-excel">
+                        <td><input type="text" class="m-job" value="{{ m.job_no }}" oninput="syncJobNo(this)" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td style="text-align:center;"><input type="checkbox" class="m-inc" {% if m.inc %}checked{% endif %} {% if not is_readonly %}onchange="processMuat(this)" {% else %}disabled{% endif %}></td>
+                        <td><input type="text" class="m-tertanggung" value="{{ m.tertanggung }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="number" step="any" class="m-persen" value="{{ m.persen|default:'' }}" style="text-align:center; width: 100%;" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-premi" value="{{ m.premi|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-bl-fee" value="{{ m.bl_fee|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-seal" value="{{ m.seal|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-freight" value="{{ m.freight|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-lss" value="{{ m.lss|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-toeslag" value="{{ m.toeslag|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-alur" value="{{ m.alur|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-thc" value="{{ m.thc_muat|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-lolo" value="{{ m.lolo_muat|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-stuffing" value="{{ m.stuffing|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-damage" value="{{ m.damage|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-trucking" value="{{ m.trucking|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-ops" value="{{ m.ops|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-tally" value="{{ m.tally|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-lain1" value="{{ m.lain_1|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-lain2" value="{{ m.lain_2|idrformat }}" {% if not is_readonly %}onblur="processMuat(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="m-total" value="{{ m.total_biaya|idrformat }}" readonly></td>
+                        {% if not is_readonly %}
+                        <td style="display:flex; gap:5px;">
+                            <button class="btn-add" onclick="addRow('muat')" title="Baris Baru"><i
+                                    class='bx bx-plus'></i></button>
+                            <button class="btn-add" style="background:var(--accent-blue);"
+                                onclick="copyRow(this, 'muat')" title="Salin Baris"><i class='bx bx-copy'></i></button>
+                            <button class="btn-add" style="background:#f85149;" onclick="deleteRow(this, 'muat')"
+                                title="Hapus Baris"><i class='bx bx-trash'></i></button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    {% if not is_readonly %}
+                    <tr data-id="" class="input-row-excel">
+                        <td><input type="text" class="m-job" placeholder="Job..." oninput="syncJobNo(this)" onblur="processMuat(this)"></td>
+                        <td style="text-align:center;"><input type="checkbox" class="m-inc"
+                                onchange="processMuat(this)"></td>
+                        <td><input type="text" class="m-tertanggung" placeholder="Nama..." onblur="processMuat(this)">
+                        </td>
+                        <td><input type="number" step="any" class="m-persen" value="" style="text-align:center; width: 100%;" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-premi" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-bl-fee" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-seal" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-freight" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-lss" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-toeslag" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-alur" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-thc" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-lolo" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-stuffing" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-damage" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-trucking" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-ops" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-tally" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-lain1" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-lain2" value="0" onblur="processMuat(this)"></td>
+                        <td><input type="text" class="m-total" readonly></td>
+                        <td style="display:flex; gap:5px;">
+                            <button class="btn-add" onclick="addRow('muat')" title="Baris Baru"><i
+                                    class='bx bx-plus'></i></button>
+                            <button class="btn-add" style="background:var(--accent-blue);" disabled
+                                title="Simpan dulu"><i class='bx bx-copy'></i></button>
+                            <button class="btn-add" style="background:#f85149;" disabled title="Hapus"><i
+                                    class='bx bx-trash'></i></button>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ======================== TAB BIAYA BONGKAR ======================== -->
+    <div id="biaya-bongkar" class="tab-content">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            {% if not is_readonly %}
+            <button class="btn-add" onclick="batchDelete('bongkar')"
+                style="background: linear-gradient(135deg, #ff416c, #ff4b2b); gap: 8px;">
+                <i class='bx bx-checkbox-checked'></i> Hapus Terpilih
+            </button>
+            {% else %}<div></div>{% endif %}
+            {% if not is_readonly %}
+            <button class="btn-add" onclick="addRow('bongkar')"
+                style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                <i class='bx bx-plus-circle'></i> Tambah Baris Bongkar
+            </button>
+            {% endif %}
+        </div>
+        <div class="table-container">
+            <table id="table-bongkar">
+                <thead>
+                    <tr>
+                        <th><i class='bx bx-hash'></i> Job No</th>
+                        <th><i class='bx bx-file-blank'></i> Doc Fee</th>
+                        <th><i class='bx bx-spray-can'></i> Cleaning</th>
+                        <th><i class='bx bx-downvote'></i> THC</th>
+                        <th><i class='bx bx-transfer'></i> LOLO</th>
+                        <th><i class='bx bx-layer'></i> Stripping</th>
+                        <th><i class='bx bx-truck'></i> Trucking</th>
+                        <th><i class='bx bx-group'></i> Buruh</th>
+                        <th><i class='bx bx-envelope'></i> Materai</th>
+                        <th><i class='bx bx-briefcase'></i> OPS</th>
+                        <th><i class='bx bx-list-check'></i> Tally</th>
+                        <th><i class='bx bx-wrench'></i> Alat</th>
+                        <th><i class='bx bx-wallet'></i> Fee</th>
+                        <th><i class='bx bx-door-open'></i> Door</th>
+                        <th><i class='bx bx-dots-horizontal-rounded'></i> L1</th>
+                        <th><i class='bx bx-dots-horizontal-rounded'></i> L2</th>
+                        <th><i class='bx bx-dots-horizontal-rounded'></i> L3</th>
+                        <th><i class='bx bx-calculator'></i> Total</th>
+                        <th><i class='bx bx-store-alt'></i> V.Muat</th>
+                        <th><i class='bx bx-directions'></i> P.Muat</th>
+                        <th><i class='bx bx-store'></i> V.Bongkar</th>
+                        <th><i class='bx bx-directions'></i> P.Bongkar</th>
+                        {% if not is_readonly %}<th><i class='bx bx-cog'></i></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bongkars %}
+                    <tr data-id="{{ b.id }}" class="input-row-excel">
+                        <td><input type="text" class="b-job" value="{{ b.job_no }}" oninput="syncJobNo(this)" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-doc-fee" value="{{ b.doc_fee|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-cleaning" value="{{ b.cleaning|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-thc" value="{{ b.thc_bongkar|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-lolo" value="{{ b.lolo_bongkar|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-strip" value="{{ b.stripping_dalam|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-trucking" value="{{ b.trucking|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-buruh" value="{{ b.buruh|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-materai" value="{{ b.materai|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-ops" value="{{ b.ops|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-tally" value="{{ b.tally_bongkar|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-alat" value="{{ b.alat|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-fee" value="{{ b.fee|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-door" value="{{ b.door_service|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-lain1" value="{{ b.by_lain|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-lain2" value="{{ b.by_lain_2|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-lain3" value="{{ b.by_lain_3|idrformat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-total" value="{{ b.tot_by_bongkar|idrformat }}" readonly></td>
+                        <td><input type="text" class="b-v-muat" value="{{ b.vendor_muat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-p-muat" value="{{ b.panduan_muat }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-v-bongkar" value="{{ b.vendor_bongkar }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        <td><input type="text" class="b-p-bongkar" value="{{ b.panduan_bongkar }}" {% if not is_readonly %}onblur="processBongkar(this)" {% else %}readonly{% endif %}></td>
+                        {% if not is_readonly %}
+                        <td style="display:flex; gap:5px;">
+                            <button class="btn-add" onclick="addRow('bongkar')" title="Baris Baru"><i
+                                    class='bx bx-plus'></i></button>
+                            <button class="btn-add" style="background:var(--accent-blue);"
+                                onclick="copyRow(this, 'bongkar')" title="Salin Baris"><i
+                                    class='bx bx-copy'></i></button>
+                            <button class="btn-add" style="background:#f85149;" onclick="deleteRow(this, 'bongkar')"
+                                title="Hapus Baris"><i class='bx bx-trash'></i></button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    {% if not is_readonly %}
+                    <tr data-id="" class="input-row-excel">
+                        <td><input type="text" class="b-job" placeholder="Job..." oninput="syncJobNo(this)" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-doc-fee" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-cleaning" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-thc" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-lolo" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-strip" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-trucking" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-buruh" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-materai" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-ops" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-tally" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-alat" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-fee" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-door" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-lain1" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-lain2" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-lain3" value="0" onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-total" value="0" readonly></td>
+                        <td><input type="text" class="b-v-muat" placeholder="Vendor..." onblur="processBongkar(this)">
+                        </td>
+                        <td><input type="text" class="b-p-muat" placeholder="Panduan..." onblur="processBongkar(this)">
+                        </td>
+                        <td><input type="text" class="b-v-bongkar" placeholder="Vendor..."
+                                onblur="processBongkar(this)"></td>
+                        <td><input type="text" class="b-p-bongkar" placeholder="Panduan..."
+                                onblur="processBongkar(this)"></td>
+                        <td style="display:flex; gap:5px;">
+                            <button class="btn-add" onclick="addRow('bongkar')" title="Baris Baru"><i
+                                    class='bx bx-plus'></i></button>
+                            <button class="btn-add" style="background:var(--accent-blue);" disabled
+                                title="Simpan dulu"><i class='bx bx-copy'></i></button>
+                            <button class="btn-add" style="background:#f85149;" disabled title="Hapus"><i
+                                    class='bx bx-trash'></i></button>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const IS_READONLY = {{ is_readonly|yesno:"true,false" }};
+        const CUSTOMER_ID = "{{ customer.id }}";
+        const BULAN = "{{ bulan }}";
+        const TAHUN = "{{ tahun }}";
+        const POL = "{{ pol|default:'' }}";
+        const POD = "{{ pod|default:'' }}";
+        const CURRENT_BULAN = "{{ bulan }}";
+        const CURRENT_TAHUN = "{{ tahun }}";
+        const CURRENT_POL = "{{ pol|escapejs }}";
+        const CURRENT_POD = "{{ pod|escapejs }}";
+        const getCSRF = () => {
+            const el = document.querySelector('[name=csrfmiddlewaretoken]');
+            return el ? el.value : "";
+        };
+
+        function printSelectedRows() {
+            const selectedChecks = document.querySelectorAll('#table-resume tbody .row-check:checked');
+            if (selectedChecks.length === 0) {
+                alert("Pilih baris di tabel RESUME yang ingin dicetak.");
+                return;
+            }
+
+            const header = {
+                bulan: "{{ bulan_name|upper }}",
+                tahun: "{{ tahun }}",
+                customer: "{{ customer.nama_customer|upper }}",
+                sales: "{{ target_user.get_full_name|upper|default:target_user.username|upper }}",
+                pol: document.getElementById('pol').value,
+                pod: document.getElementById('pod').value
+            };
+
+            let html = `
+            <html>
+            <head>
+                <title>JOA REPORT - ${header.customer}</title>
+                <style>
+                    @media print { @page { margin: 1cm; } }
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11px; color: #000; background: #fff; padding: 0; margin: 0; }
+                    .print-page { padding: 20px; }
+                    .header-table { width: 100%; border-bottom: 2px solid #000; margin-bottom: 20px; }
+                    .header-table td { padding: 4px; vertical-align: top; }
+                    .section-title { background: #f0f0f0; padding: 6px 10px; font-weight: bold; border-left: 4px solid #2a7cd1; margin: 15px 0 10px 0; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                    th, td { border: 1px solid #aaa; padding: 6px; text-align: left; }
+                    th { background: #f8f8f8; font-weight: 700; width: 35%; }
+                    .row-container { border: 1px solid #ccc; padding: 15px; margin-bottom: 40px; page-break-inside: avoid; border-radius: 8px; }
+                    .footer-note { font-size: 9px; color: #666; text-align: right; margin-top: 10px; }
+                    .grid { display: flex; gap: 20px; }
+                    .grid-col { flex: 1; }
+                    .val-bold { font-weight: bold; color: #000; }
+                    .profit-box { background: #e7f3ff; padding: 10px; border: 1px solid #2a7cd1; border-radius: 4px; margin-top: 10px; text-align: center; }
+                </style>
+            </head>
+            <body>
+            `;
+
+            selectedChecks.forEach((cb, idx) => {
+                const trRes = cb.closest('tr');
+                const rowIndex = Array.from(trRes.parentNode.children).indexOf(trRes);
+
+                const trMuat = document.querySelector('#table-muat tbody').children[rowIndex];
+                const trBongkar = document.querySelector('#table-bongkar tbody').children[rowIndex];
+
+                if (!trMuat || !trBongkar) return;
+
+                html += `
+                <div class="print-page">
+                    <table class="header-table">
+                        <tr>
+                            <td style="width: 60%;">
+                                <h1 style="margin: 0; color: #2a7cd1;">JOA LOGISTICS</h1>
+                                <p style="margin: 5px 0;">REPORT PENGIRIMAN FISIK</p>
+                            </td>
+                            <td style="text-align: right;">
+                                <strong>${header.bulan} ${header.tahun}</strong><br>
+                                Customer: ${header.customer}<br>
+                                Route: ${header.pol} &rarr; ${header.pod}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="row-container">
+                        <div class="section-title">BARIS #${rowIndex + 1}: ${trRes.querySelector('.res-consignee').value.toUpperCase()}</div>
+                        
+                        <div class="grid">
+                            <div class="grid-col">
+                                <strong>DATA UTAMA</strong>
+                                <table>
+                                    <tr><th>Consignee</th><td class="val-bold">${trRes.querySelector('.res-consignee').value}</td></tr>
+                                    <tr><th>Alamat Bongkar</th><td>${trRes.querySelector('.res-alamat').value}</td></tr>
+                                    <tr><th>Tarif Jasa</th><td>Rp ${trRes.querySelector('.res-tarif').value}</td></tr>
+                                    <tr><th>PPN (${trRes.querySelector('.res-ppn-pct').value}%)</th><td>Rp ${trRes.querySelector('.res-ppn-val').value}</td></tr>
+                                    <tr><th>PPH 23</th><td>Rp ${trRes.querySelector('.res-pph23').value}</td></tr>
+                                    <tr><th>Total Terima</th><td class="val-bold">Rp ${trRes.querySelector('.res-total-terima').value}</td></tr>
+                                </table>
+
+                                <div class="profit-box">
+                                    <small>ESTIMASI PROFIT</small><br>
+                                    <strong style="font-size: 16px;">Rp ${trRes.querySelector('.res-profit').value}</strong>
+                                </div>
+                            </div>
+
+                            <div class="grid-col">
+                                <strong>RINCIAN BIAYA (MUAT & BONGKAR)</strong>
+                                <table>
+                                    <tr><th>Freight / BL / Seal</th><td>${trMuat.querySelector('.m-freight').value} / ${trMuat.querySelector('.m-bl-fee').value} / ${trMuat.querySelector('.m-seal').value}</td></tr>
+                                    <tr><th>Trucking Muat</th><td>Rp ${trMuat.querySelector('.m-trucking').value}</td></tr>
+                                    <tr><th>Trucking Bongkar</th><td>Rp ${trBongkar.querySelector('.b-trucking').value}</td></tr>
+                                    <tr><th>THC Muat / Bongkar</th><td>${trMuat.querySelector('.m-thc').value} / ${trBongkar.querySelector('.b-thc').value}</td></tr>
+                                    <tr><th>LOLO Muat / Bongkar</th><td>${trMuat.querySelector('.m-lolo').value} / ${trBongkar.querySelector('.b-lolo').value}</td></tr>
+                                    <tr><th>OP / OPS Muat / Bongkar</th><td>${trMuat.querySelector('.m-ops').value} / ${trBongkar.querySelector('.b-ops').value}</td></tr>
+                                    <tr><th>Buruh / Alat</th><td>${trBongkar.querySelector('.b-buruh').value} / ${trBongkar.querySelector('.b-alat').value}</td></tr>
+                                    <tr style="background: #fafafa;"><th>Total Seluruh Biaya</th><td class="val-bold">Rp ${trRes.querySelector('.res-total-biaya').value}</td></tr>
+                                </table>
+                                
+                                <div style="margin-top: 10px;">
+                                    <small><strong>Keterangan:</strong></small><br>
+                                    <span style="font-size: 10px;">Vendor Muat: ${trBongkar.querySelector('.b-v-muat').value || '-'} | Vendor Bongkar: ${trBongkar.querySelector('.b-v-bongkar').value || '-'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="footer-note">Dicetak pada: ${new Date().toLocaleString('id-ID')} | Sales: ${header.sales}</div>
+                    </div>
+                </div>
+                ${idx < selectedChecks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''}
+                `;
+            });
+
+            html += `</body></html>`;
+
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            // Wait for images/styles to load then print
+            win.onload = function () {
+                win.print();
+                // win.close(); // Optional: auto close after print
+            };
+        }
+
+        const getVal = (row, cls, isCurrency = true) => {
+            let el = row.querySelector(cls);
+            if (!el) return 0;
+            let val = el.value.trim();
+            if (isCurrency) {
+                // Remove all dots (thousands) and change comma to dot (decimal)
+                val = val.replace(/\./g, '').replace(',', '.');
+            } else {
+                // For percentage/small decimal: 
+                // If it contains comma, it's likely a decimal (ID format), change to dot
+                val = val.replace(',', '.');
+                // Ensure we don't have multiple dots
+                const parts = val.split('.');
+                if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+            }
+            let num = parseFloat(val);
+            return isNaN(num) ? 0 : num;
+        };
+
+        const formatIDR = (num) => Math.round(num).toLocaleString('id-ID');
+
+        function switchUser(userId) {
+            window.location.href = '/?user_id=' + userId;
+        }
+
+        function openTab(evt, tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        function genericSave(url, data, row) {
+            if (IS_READONLY) return; // Block save kalau read only
+
+            data.bulan = CURRENT_BULAN;
+            data.tahun = CURRENT_TAHUN;
+            data.pol = CURRENT_POL;
+            data.pod = CURRENT_POD;
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                body: JSON.stringify(data)
+            })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        if (row) {
+                            row.setAttribute('data-id', result.id);
+                        }
+                    } else {
+                        console.error('Save error:', result.message);
+                        let errorMsg = JSON.stringify(result.message);
+                        alert("Gagal menyimpan data: " + errorMsg);
+                    }
+                })
+                .catch(err => console.error("Save Error:", err));
+        }
+
+        function processResume(el) {
+            const row = el.closest('tr');
+            const tarif = getVal(row, '.res-tarif', true);
+            const ppnPct = getVal(row, '.res-ppn-pct', false);
+            const totalBiaya = getVal(row, '.res-total-biaya', true);
+
+            const ppnVal = tarif * (ppnPct / 100);
+            const pph23 = tarif * 0.02;
+            const totalTerima = tarif + ppnVal - pph23;
+            const profit = totalTerima - totalBiaya;
+
+            row.querySelector('.res-ppn-val').value = formatIDR(ppnVal);
+            row.querySelector('.res-pph23').value = formatIDR(pph23);
+            row.querySelector('.res-total-terima').value = formatIDR(totalTerima);
+            row.querySelector('.res-profit').value = formatIDR(profit);
+
+            genericSave('/save-resume/', {
+                id: row.getAttribute('data-id') || null,
+                customer_id: CUSTOMER_ID,
+                consignee: row.querySelector('.res-consignee').value,
+                alamat_bongkar: row.querySelector('.res-alamat').value,
+                tarif_jasa_kirim: Math.round(tarif),
+                ppn_pct: ppnPct,
+                ppn: Math.round(ppnVal),
+                pph23: Math.round(pph23),
+                total: Math.round(totalTerima),
+                total_biaya: Math.round(totalBiaya),
+                profit: Math.round(profit),
+            }, row);
+        }
+
+        function processMuat(el) {
+            const row = el.closest('tr');
+            const cols = ['m-premi', 'm-bl-fee', 'm-seal', 'm-freight', 'm-lss',
+                'm-toeslag', 'm-alur', 'm-thc', 'm-lolo', 'm-stuffing',
+                'm-damage', 'm-trucking', 'm-ops', 'm-tally', 'm-lain1', 'm-lain2'];
+            const total = cols.reduce((sum, c) => sum + getVal(row, '.' + c), 0);
+            row.querySelector('.m-total').value = formatIDR(total);
+            genericSave('/save-biaya-muat/', {
+                id: row.getAttribute('data-id') || null,
+                customer_id: CUSTOMER_ID,
+                job_no: row.querySelector('.m-job').value,
+                inc: row.querySelector('.m-inc').checked,
+                tertanggung: row.querySelector('.m-tertanggung').value,
+                persen: getVal(row, '.m-persen', false),
+                premi: Math.round(getVal(row, '.m-premi', true)),
+                bl_fee: Math.round(getVal(row, '.m-bl-fee', true)),
+                seal: Math.round(getVal(row, '.m-seal', true)),
+                freight: Math.round(getVal(row, '.m-freight', true)),
+                lss: Math.round(getVal(row, '.m-lss', true)),
+                toeslag: Math.round(getVal(row, '.m-toeslag', true)),
+                alur: Math.round(getVal(row, '.m-alur', true)),
+                thc_muat: Math.round(getVal(row, '.m-thc', true)),
+                lolo_muat: Math.round(getVal(row, '.m-lolo', true)),
+                stuffing: Math.round(getVal(row, '.m-stuffing', true)),
+                damage: Math.round(getVal(row, '.m-damage', true)),
+                trucking: Math.round(getVal(row, '.m-trucking', true)),
+                ops: Math.round(getVal(row, '.m-ops', true)),
+                tally: Math.round(getVal(row, '.m-tally', true)),
+                lain_1: Math.round(getVal(row, '.m-lain1', true)),
+                lain_2: Math.round(getVal(row, '.m-lain2', true)),
+                total_biaya: Math.round(total),
+            }, row);
+        }
+
+        function processBongkar(el) {
+            const row = el.closest('tr');
+            const cols = ['b-doc-fee', 'b-cleaning', 'b-thc', 'b-lolo', 'b-strip',
+                'b-trucking', 'b-buruh', 'b-materai', 'b-ops', 'b-tally',
+                'b-alat', 'b-fee', 'b-door', 'b-lain1', 'b-lain2', 'b-lain3'];
+            const total = cols.reduce((sum, c) => sum + getVal(row, '.' + c), 0);
+            row.querySelector('.b-total').value = formatIDR(total);
+            genericSave('/save-biaya-bongkar/', {
+                id: row.getAttribute('data-id') || null,
+                customer_id: CUSTOMER_ID,
+                job_no: row.querySelector('.b-job').value,
+                doc_fee: Math.round(getVal(row, '.b-doc-fee', true)),
+                cleaning: Math.round(getVal(row, '.b-cleaning', true)),
+                thc_bongkar: Math.round(getVal(row, '.b-thc', true)),
+                lolo_bongkar: Math.round(getVal(row, '.b-lolo', true)),
+                stripping_dalam: Math.round(getVal(row, '.b-strip', true)),
+                trucking: Math.round(getVal(row, '.b-trucking', true)),
+                buruh: Math.round(getVal(row, '.b-buruh', true)),
+                materai: Math.round(getVal(row, '.b-materai', true)),
+                ops: Math.round(getVal(row, '.b-ops', true)),
+                tally_bongkar: Math.round(getVal(row, '.b-tally', true)),
+                alat: Math.round(getVal(row, '.b-alat', true)),
+                fee: Math.round(getVal(row, '.b-fee', true)),
+                door_service: Math.round(getVal(row, '.b-door', true)),
+                by_lain: Math.round(getVal(row, '.b-lain1', true)),
+                by_lain_2: Math.round(getVal(row, '.b-lain2', true)),
+                by_lain_3: Math.round(getVal(row, '.b-lain3', true)),
+                tot_by_bongkar: Math.round(total),
+                vendor_muat: row.querySelector('.b-v-muat').value,
+                panduan_muat: row.querySelector('.b-p-muat').value,
+                vendor_bongkar: row.querySelector('.b-v-bongkar').value,
+                panduan_bongkar: row.querySelector('.b-p-bongkar').value,
+            }, row);
+        }
+
+        function batchDelete(tableType) {
+            if (IS_READONLY) return;
+            // Always use Resume table as the source of truth for selection
+            const table = document.getElementById('table-resume');
+            const selectedChecks = Array.from(table.querySelectorAll('.row-check:checked'));
+
+            if (selectedChecks.length === 0) {
+                alert("Silakan pilih baris di tabel RESUME yang ingin dihapus.");
+                return;
+            }
+
+            if (!confirm(`Hapus ${selectedChecks.length} baris yang dipilih dari SEMUA tabel?`)) return;
+
+            const deletePromises = [];
+
+            selectedChecks.forEach(cb => {
+                const row = cb.closest('tr');
+                const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+
+                const trRes = document.querySelector('#table-resume tbody').children[rowIndex];
+                const trMuat = document.querySelector('#table-muat tbody').children[rowIndex];
+                const trBongkar = document.querySelector('#table-bongkar tbody').children[rowIndex];
+
+                [
+                    { table: 'resume', id: trRes?.getAttribute('data-id'), el: trRes },
+                    { table: 'muat', id: trMuat?.getAttribute('data-id'), el: trMuat },
+                    { table: 'bongkar', id: trBongkar?.getAttribute('data-id'), el: trBongkar }
+                ].forEach(item => {
+                    if (item.id) {
+                        const urlMap = { resume: '/delete-resume/', muat: '/delete-muat/', bongkar: '/delete-bongkar/' };
+                        // Note: Backend URLs might need adjustment if they don't match exactly.
+                        // Based on urls.py: delete_resume, delete_biaya_muat, delete_biaya_bongkar
+                        const actualUrlMap = {
+                            resume: '/delete-resume/',
+                            muat: '/delete-biaya-muat/',
+                            bongkar: '/delete-biaya-bongkar/'
+                        };
+
+                        deletePromises.push(
+                            fetch(actualUrlMap[item.table], {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                                body: JSON.stringify({ id: item.id })
+                            })
+                        );
+                    }
+                    if (item.el) item.el.remove();
+                });
+            });
+
+            Promise.all(deletePromises).finally(() => {
+                updateRowNumbers();
+            });
+        }
+
+        function updateRowNumbers() {
+            // Update nomor urut di Resume (tetap 1, 2, 3...)
+            const resRows = document.querySelectorAll('#table-resume tbody tr');
+            resRows.forEach((row, idx) => {
+                const noCol = row.querySelector('.row-no');
+                if (noCol) noCol.innerText = idx + 1;
+            });
+
+            // Pastikan Job No di Muat & Bongkar tetap sinkron antar tabel jika user mengedit salah satu
+            // Tapi kita TIDAK memaksa nomor 1, 2, 3 lagi agar user bisa pakai format sendiri
+        }
+
+        function incrementJobNo(val) {
+            if (!val) return "";
+            // Mencari angka di akhir string (misal 0226001)
+            let match = val.match(/(\d+)$/);
+            if (!match) return val + "1"; 
+            let numStr = match[0];
+            let nextNum = (parseInt(numStr) + 1).toString().padStart(numStr.length, '0');
+            return val.substring(0, val.length - numStr.length) + nextNum;
+        }
+
+        function syncJobNo(el) {
+            const row = el.closest('tr');
+            const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+            const newVal = el.value;
+            
+            // Cari baris yang sama di tabel lain (Muat <-> Bongkar)
+            const targetTable = el.classList.contains('m-job') ? 'bongkar' : 'muat';
+            const targetPrefix = targetTable === 'muat' ? 'm' : 'b';
+            const targetRow = document.querySelector(`#table-${targetTable} tbody`).children[rowIndex];
+            if (targetRow) {
+                const targetInput = targetRow.querySelector(`.${targetPrefix}-job`);
+                if (targetInput) targetInput.value = newVal;
+            }
+        }
+
+        function toggleAll(master, tableType) {
+            const table = document.getElementById('table-' + tableType);
+            table.querySelectorAll('.row-check').forEach(cb => cb.checked = master.checked);
+        }
+
+        function addRow(type) {
+            if (IS_READONLY) return;
+
+            // Ambil Job No terakhir untuk increment
+            const lastMuatRow = document.querySelector('#table-muat tbody tr:last-child');
+            const lastJobVal = lastMuatRow ? lastMuatRow.querySelector('.m-job').value : "";
+            const nextJobVal = incrementJobNo(lastJobVal);
+
+            ['resume', 'muat', 'bongkar'].forEach(t => {
+                const tbody = document.querySelector(`#table-${t} tbody`);
+                const lastRow = tbody.rows[tbody.rows.length - 1];
+                const newRow = lastRow.cloneNode(true);
+                newRow.setAttribute('data-id', '');
+                newRow.querySelectorAll('input').forEach(input => {
+                    if (input.type === 'checkbox') {
+                        input.checked = false;
+                    } else if (input.classList.contains('m-job') || input.classList.contains('b-job')) {
+                        input.value = nextJobVal;
+                        input.readOnly = false;
+                        input.style.background = '';
+                    } else {
+                        if (input.classList.contains('res-ppn-pct')) {
+                            input.value = '11';
+                        } else if (input.classList.contains('m-persen')) {
+                            input.value = '';
+                        } else {
+                            input.value = '';
+                        }
+                    }
+                });
+                newRow.querySelectorAll('button').forEach(btn => btn.disabled = false);
+                tbody.appendChild(newRow);
+            });
+
+            updateRowNumbers();
+
+            // PAKSA SIMPAN SEMUA (Triple Save) agar dapat ID serentak
+            const lastIdx = document.querySelector('#table-resume tbody').rows.length - 1;
+            const resInp = document.querySelector('#table-resume tbody').rows[lastIdx].querySelector('input:not([readonly])');
+            const muatInp = document.querySelector('#table-muat tbody').rows[lastIdx].querySelector('input:not([readonly])');
+            const bongInp = document.querySelector('#table-bongkar tbody').rows[lastIdx].querySelector('input:not([readonly])');
+
+            if (resInp) processResume(resInp);
+            if (muatInp) processMuat(muatInp);
+            if (bongInp) processBongkar(bongInp);
+
+            if (resInp) resInp.focus();
+        }
+
+        function deleteRow(btn, type) {
+            if (IS_READONLY) return;
+            const row = btn.closest('tr');
+            const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+
+            if (!confirm("Yakin ingin menghapus baris ini dari SEMUA tabel?")) return;
+
+            const trRes = document.querySelector('#table-resume tbody').children[rowIndex];
+            const trMuat = document.querySelector('#table-muat tbody').children[rowIndex];
+            const trBongkar = document.querySelector('#table-bongkar tbody').children[rowIndex];
+
+            const items = [
+                { table: 'resume', id: trRes?.getAttribute('data-id'), el: trRes, url: '/delete-resume/' },
+                { table: 'muat', id: trMuat?.getAttribute('data-id'), el: trMuat, url: '/delete-biaya-muat/' },
+                { table: 'bongkar', id: trBongkar?.getAttribute('data-id'), el: trBongkar, url: '/delete-biaya-bongkar/' }
+            ];
+
+            const deletePromises = items.filter(i => i.id).map(i =>
+                fetch(i.url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+                    body: JSON.stringify({ id: i.id })
+                })
+            );
+
+            Promise.all(deletePromises).finally(() => {
+                items.forEach(i => { if (i.el) i.el.remove(); });
+                updateRowNumbers();
+            });
+        }
+
+        function copyRow(btn, type) {
+            if (IS_READONLY) return;
+            const row = btn.closest('tr');
+            const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+
+            // Ambil Job No dari baris terakhir saat ini untuk increment baris baru
+            const lastMuatRow = document.querySelector('#table-muat tbody tr:last-child');
+            const lastJobVal = lastMuatRow ? lastMuatRow.querySelector('.m-job').value : "";
+            const nextJobVal = incrementJobNo(lastJobVal);
+
+            ['resume', 'muat', 'bongkar'].forEach(t => {
+                const tbody = document.querySelector(`#table-${t} tbody`);
+                const sourceRow = tbody.children[rowIndex];
+                const newRow = sourceRow.cloneNode(true);
+                newRow.setAttribute('data-id', '');
+
+                const jobInput = newRow.querySelector('.m-job, .b-job');
+                if (jobInput) {
+                    jobInput.value = nextJobVal;
+                    jobInput.readOnly = false;
+                    jobInput.style.background = '';
+                }
+
+                sourceRow.parentNode.insertBefore(newRow, sourceRow.nextSibling);
+            });
+
+            updateRowNumbers();
+
+            // PAKSA SIMPAN SEMUA HASIL COPY
+            const newIdx = rowIndex + 1;
+            const resInp = document.querySelector('#table-resume tbody').rows[newIdx].querySelector('input:not([readonly])');
+            const muatInp = document.querySelector('#table-muat tbody').rows[newIdx].querySelector('input:not([readonly])');
+            const bongInp = document.querySelector('#table-bongkar tbody').rows[newIdx].querySelector('input:not([readonly])');
+
+            if (resInp) processResume(resInp);
+            if (muatInp) processMuat(muatInp);
+            if (bongInp) processBongkar(bongInp);
+
+            if (resInp) resInp.focus();
+        }
+
+        function printSelectedRows() {
+            const resIds = [];
+            const muatIds = [];
+            const bongIds = [];
+            const rowNums = [];
+
+            // Use Resume selection as authority
+            document.querySelectorAll('#table-resume tbody tr').forEach((resRow, idx) => {
+                const cb = resRow.querySelector('.row-check');
+                if (cb && cb.checked) {
+                    const resId = resRow.getAttribute('data-id');
+                    // Even if ID is empty, we can still print (though saving is better)
+                    
+                    const muatRow = document.querySelectorAll('#table-muat tbody tr')[idx];
+                    const bongRow = document.querySelectorAll('#table-bongkar tbody tr')[idx];
+                    
+                    resIds.push(resId || '');
+                    muatIds.push(muatRow ? muatRow.getAttribute('data-id') || '' : '');
+                    bongIds.push(bongRow ? bongRow.getAttribute('data-id') || '' : '');
+                    rowNums.push(idx + 1); // Simpan nomor urut asli (1, 2, 3...)
+                }
+            });
+
+            if (resIds.length === 0) {
+                alert("Pilih baris yang ingin dicetak pada tabel Resume.");
+                return;
+            }
+
+            const url = `/print-invoice/?customer_id=${CUSTOMER_ID}&bulan=${BULAN}&tahun=${TAHUN}&pol=${encodeURIComponent(POL)}&pod=${encodeURIComponent(POD)}&res_ids=${resIds.join(',')}&muat_ids=${muatIds.join(',')}&bong_ids=${bongIds.join(',')}&row_nums=${rowNums.join(',')}`;
+            window.open(url, '_blank');
+        }
+
+        window.onload = () => {
+            updateRowNumbers();
+        };
+    </script>
+</body>
+
+</html>
