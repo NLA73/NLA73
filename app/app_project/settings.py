@@ -33,6 +33,7 @@ INSTALLED_APPS = [
 # 4. Satpam (Middleware) - URUTAN WAJIB SAMA
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -94,3 +95,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Kasih tahu Django jangan pakai User standar, tapi pakai buatan Nathan
 AUTH_USER_MODEL = 'app.User'
+
+STATIC_URL = 'static/'
+
+# Folder tempat Django mengumpulkan semua file statis saat dideploy
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Lokasi folder static asli di project kamu
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Mengaktifkan kompresi dan caching otomatis (biar web lebih kencang)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
