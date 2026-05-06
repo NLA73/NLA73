@@ -101,6 +101,9 @@ STORAGES = {
     },
 }
 
+# Supaya WhiteNoise tidak crash kalau ada file static yang belum ke-collect
+WHITENOISE_MANIFEST_STRICT = False
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Kasih tahu Django jangan pakai User standar, tapi pakai buatan Nathan
