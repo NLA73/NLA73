@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 2. Keamanan (Isi random aja kalau buat belajar)
 SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*'] # Biarkan sementara agar mudah akses
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
