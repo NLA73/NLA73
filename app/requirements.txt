@@ -1,10 +1,10 @@
 asgiref==3.11.1
 Django==6.0.3
 djangorestframework==3.17.1
-dotenv==0.9.9
-psycopg2==2.9.11
 python-dotenv==1.2.2
+psycopg2-binary==2.9.11
 sqlparse==0.5.5
 tzdata==2026.1
-mysqlclient==2.2.4
-gunicorn
+gunicorn==23.0.0
+whitenoise==6.9.0
+dj-database-url==2.3.0

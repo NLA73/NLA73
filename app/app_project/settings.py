@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -8,14 +9,16 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 2. Keamanan (Isi random aja kalau buat belajar)
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-ganti-ini')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['*'] # Biarkan sementara agar mudah akses
+ALLOWED_HOSTS = ['*']  # Biarkan sementara agar mudah akses
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'https://*.ngrok-free.dev',
     'https://*.lhr.life',
-    'https://*.pythonanywhere.com', # Tambahkan domain PythonAnywhere
+    'https://*.pythonanywhere.com',
+    'https://*.railway.app',       # Domain Railway
+    'https://*.up.railway.app',    # Domain Railway (format baru)
 ]
 
 # 3. Daftar Aplikasi
@@ -66,12 +69,11 @@ WSGI_APPLICATION = 'app_project.wsgi.application'
 
 
 # 7. KONEKSI DATABASE
-# Gunakan SQLite untuk Free Tier PythonAnywhere (MySQL sekarang bayar)
+# Kalau ada DATABASE_URL dari Railway, pakai itu. Kalau tidak, pakai SQLite lokal.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+    )
 }
 
 # 8. Bahasa & Waktu
@@ -81,30 +83,25 @@ USE_I18N = True
 USE_TZ = True
 
 # 9. File Statis (CSS/JS)
-# --- BAGIAN STATIC ---
 STATIC_URL = '/static/'
-
-# WAJIB TAMBAH INI supaya folder static di luar app kebaca
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-
-# Tambahkan ini untuk DEPLOYMENT (Folder hasil kumpulin semua static)
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Kasih tahu Django jangan pakai User standar, tapi pakai buatan Nathan
-AUTH_USER_MODEL = 'app.User'
-
-STATIC_URL = 'static/'
-
-# Folder tempat Django mengumpulkan semua file statis saat dideploy
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Lokasi folder static asli di project kamu
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# Folder tempat Django mengumpulkan semua file statis saat dideploy
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 # Mengaktifkan kompresi dan caching otomatis (biar web lebih kencang)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Django 6.0 pakai STORAGES, bukan STATICFILES_STORAGE
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Kasih tahu Django jangan pakai User standar, tapi pakai buatan Nathan
+AUTH_USER_MODEL = 'app.User'
